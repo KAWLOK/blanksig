@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { WiiChannelGrid } from '@/components/wii-channel'
 
 export default function Home() {
   const [bootComplete, setBootComplete] = useState(false)
@@ -86,29 +87,14 @@ export default function Home() {
         </div>
 
         {/* Navigation Channels - Wii Style */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {[
-            { title: 'SUBMIT', icon: '█', desc: 'Submit anonymous testimonial' },
-            { title: 'BROWSE', icon: '█', desc: 'View credible testimonials' },
-            { title: 'VERIFY', icon: '█', desc: 'Check your Ethos score' },
-            { title: 'ABOUT', icon: '█', desc: 'Learn about BlankSig' },
-          ].map((channel, idx) => (
-            <div
-              key={idx}
-              className="group relative p-8 border-2 border-primary hover:border-secondary transition-all duration-300 cursor-crosshair hover:scale-105 hover:shadow-[0_0_20px_rgba(0,255,65,0.5)]"
-            >
-              <div className="font-terminal text-4xl text-center mb-4 group-hover:animate-glitch">
-                {channel.icon}
-              </div>
-              <div className="font-terminal text-2xl text-center mb-2 text-secondary">
-                [ {channel.title} ]
-              </div>
-              <div className="font-mono text-sm text-center text-white/60">
-                {channel.desc}
-              </div>
-            </div>
-          ))}
-        </div>
+        <WiiChannelGrid
+          channels={[
+            { title: 'SUBMIT', icon: '█', description: 'Submit anonymous testimonial', href: '/submit' },
+            { title: 'BROWSE', icon: '█', description: 'View credible testimonials', href: '/browse' },
+            { title: 'VERIFY', icon: '█', description: 'Check your Ethos score', href: '/verify' },
+            { title: 'ABOUT', icon: '█', description: 'Learn about BlankSig', href: '/about' },
+          ]}
+        />
 
         {/* Footer */}
         <div className="mt-16 text-center font-mono text-sm text-white/40">
