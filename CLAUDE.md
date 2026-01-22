@@ -2,7 +2,7 @@
 
 **Repository**: KAWLOK/blanksig
 **Last Updated**: 2026-01-22
-**Status**: New Repository - Initial Setup Phase
+**Status**: Active Development - Ethos Network Vibeathon Hackathon Project
 
 ---
 
@@ -24,45 +24,230 @@
 ## Repository Overview
 
 ### Project Purpose
-*To be defined as the project evolves*
 
-This repository is currently in its initial setup phase. The following sections will be updated as the codebase develops.
+**BlankSig** - Anonymous but credible testimonials for the Ethos Network Vibeathon hackathon.
+
+**Tagline**: "Identity: void. Credibility: verified."
+
+**Problem**: People need to speak freely (whistleblowing, sensitive feedback, controversial opinions) while maintaining credibility. Traditional anonymous platforms lack trust; identified platforms lack safety.
+
+**Solution**: BlankSig enables truly anonymous testimonials where only the reviewer's Ethos reputation score is visible, not their identity. Users connect their wallet to verify their Ethos score, submit a testimonial, and the system stores ONLY the score - never the wallet address or any identifying information.
+
+**Use Cases**:
+- Workplace feedback and whistleblowing
+- Product reviews without retaliation risk
+- Community feedback
+- Controversial opinions with credibility backing
+
+**Hackathon**: Ethos Network Vibeathon
+- Register: https://vibeathon.ethos.network/#register
+- Docs: https://developers.ethos.network/
+- Quickstart: https://developers.ethos.network/api-documentation/vibe-coding-quickstart
 
 ### Technology Stack
-*To be defined based on first commits*
 
-Common possibilities to watch for:
-- **Language**: Python, JavaScript/TypeScript, Go, Rust, etc.
-- **Framework**: React, Vue, Django, Flask, Express, etc.
-- **Build Tools**: webpack, vite, cargo, make, etc.
-- **Package Manager**: npm, yarn, pnpm, pip, poetry, cargo, etc.
+**Core**:
+- **Framework**: Next.js 14+ (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **UI Components**: Shadcn/ui (heavily customized for "Hacker Wii Terminal" aesthetic)
+
+**Animations & Effects**:
+- Framer Motion (page transitions, glitch effects)
+- React Type Animation (typing effects)
+- @react-spring/web (Wii-style 3D card animations)
+
+**Backend & Database**:
+- Ethos Network API integration
+- Vercel Postgres (or Supabase as alternative)
+- Next.js API Routes
+
+**Development & Deployment**:
+- Package Manager: npm
+- Deployment: Vercel
+- Version Control: Git
+
+**Typography**:
+- VT323 (terminal/retro) - Google Fonts
+- JetBrains Mono (code) - Google Fonts
+- Inter (body text when needed)
 
 ### Project Structure
 ```
 blanksig/
-├── .git/                 # Git version control
-└── CLAUDE.md            # This file - AI assistant guide
+├── .git/                      # Git version control
+├── CLAUDE.md                  # This file - AI assistant guide
+├── README.md                  # Project documentation
+├── package.json               # Dependencies and scripts
+├── tsconfig.json              # TypeScript configuration
+├── tailwind.config.ts         # Tailwind CSS configuration
+├── next.config.js             # Next.js configuration
+├── .env.local                 # Environment variables (not committed)
+├── app/                       # Next.js App Router
+│   ├── layout.tsx             # Root layout with CRT effects
+│   ├── page.tsx               # Landing page (boot sequence)
+│   ├── globals.css            # Global styles + CRT effects
+│   ├── submit/
+│   │   └── page.tsx           # Submit testimonial flow
+│   ├── browse/
+│   │   └── page.tsx           # Browse testimonials
+│   ├── verify/
+│   │   └── page.tsx           # Verify Ethos score
+│   ├── about/
+│   │   └── page.tsx           # About page
+│   └── api/
+│       ├── blanksigs/
+│       │   └── route.ts       # POST/GET testimonials
+│       ├── verify-score/
+│       │   └── route.ts       # Verify Ethos score
+│       └── stats/
+│           └── route.ts       # Platform statistics
+├── components/                # React components
+│   ├── ui/                    # Shadcn components (customized)
+│   ├── wii-channel.tsx        # Wii-style navigation cards
+│   ├── terminal-window.tsx    # Testimonial display
+│   ├── credibility-badge.tsx  # Ethos score display
+│   ├── terminal-input.tsx     # Form inputs
+│   ├── boot-sequence.tsx      # Landing page animation
+│   └── crt-overlay.tsx        # CRT screen effects
+├── lib/                       # Utility functions
+│   ├── ethos.ts               # Ethos API integration
+│   ├── db.ts                  # Database connection
+│   └── utils.ts               # Helper functions
+├── types/                     # TypeScript types
+│   └── index.ts               # Global type definitions
+└── public/                    # Static assets
+    ├── favicon.ico            # Pixel art favicon
+    ├── og-image.png           # Open Graph image
+    └── sounds/                # Optional UI sounds
 ```
 
-*This structure will be updated as the project grows*
+*This structure will evolve during development*
 
 ---
 
 ## Current State
 
 ### Repository Status
-- **Initial State**: Empty repository, no commits yet
 - **Branch**: `claude/claude-md-mkpt5ieob2q0ibpc-1U17O`
 - **Remote**: origin at http://127.0.0.1:17838/git/KAWLOK/blanksig
+- **Development Phase**: Foundation & Core Features
 
-### Next Steps for Development
-1. Define project purpose and technology stack
-2. Initialize project structure (package.json, requirements.txt, Cargo.toml, etc.)
-3. Set up development environment and tooling
-4. Create initial documentation (README.md)
-5. Implement core functionality
-6. Set up testing framework
-7. Configure CI/CD pipelines
+### Development Phases
+
+**Phase 1 - Foundation** (Day 1):
+- [x] Set up Next.js project with TypeScript
+- [ ] Configure Tailwind + Shadcn
+- [ ] Implement color system and typography
+- [ ] Create base layout with CRT effects
+- [ ] Integrate Ethos API (test connection)
+- [ ] Set up database schema
+
+**Phase 2 - Core Features** (Day 2):
+- [ ] Build Wii channel navigation
+- [ ] Create testimonial card component
+- [ ] Implement submission flow
+- [ ] Build browse/filter page
+- [ ] Connect to Ethos API for verification
+- [ ] Test anonymity (verify no data leaks)
+
+**Phase 3 - Polish** (Day 3):
+- [ ] Add all animations and effects
+- [ ] Implement responsive design
+- [ ] Create landing page with boot sequence
+- [ ] Add toast notifications
+- [ ] Error handling throughout
+- [ ] Performance optimization
+
+**Phase 4 - Deploy & Demo** (Day 4):
+- [ ] Set up custom domain
+- [ ] Deploy to Vercel
+- [ ] Seed demo data
+- [ ] Create README with screenshots
+- [ ] Record demo video (optional)
+- [ ] Final testing on all devices
+
+### Hackathon Strategy
+- **Focus**: 1-2 features executed EXCEPTIONALLY well (quality over quantity)
+- **Goal**: Make judges remember "the hacker Wii one"
+- **Differentiator**: Unique UI aesthetic + perfect polish
+- **Demo-Ready**: Every detail polished for presentation
+
+---
+
+## UI/UX Design System - "Hacker Wii Terminal"
+
+### Design Philosophy
+Combine Nintendo Wii channel aesthetics with hacker/terminal visuals. Y2K nostalgia meets cyberpunk underground. Every interaction should feel like "hacking" even though you're just browsing testimonials.
+
+### Color Palette
+```css
+--color-bg: #000000          /* Pure black background */
+--color-primary: #00FF41     /* Electric cyan */
+--color-secondary: #39FF14   /* Matrix green */
+--color-accent: #B026FF      /* Neon purple */
+--color-danger: #FF0041      /* Terminal red */
+--color-text: #FFFFFF        /* White */
+
+/* Credibility Tier Colors */
+--tier-untrusted: #FF0041    /* Red (0-300) */
+--tier-verified: #FFD700     /* Yellow (301-600) */
+--tier-trusted: #39FF14      /* Green (601-800) */
+--tier-elite: #00FF41        /* Cyan (801-900) */
+--tier-legendary: #B026FF    /* Purple (901-1000) */
+```
+
+### Typography
+- **Headings**: VT323 (terminal/retro aesthetic)
+- **Code/Monospace**: JetBrains Mono
+- **Body Text**: Inter (when readability is critical)
+- **ALL_CAPS** for labels and terminal commands
+
+### Visual Effects
+- CRT screen curvature (subtle CSS filter)
+- Scanline overlay (15% opacity)
+- Glitch effects on transitions
+- Neon glow on interactive elements (`box-shadow`)
+- Typing animation on page load
+- Matrix rain background (5% opacity, very slow)
+
+### Ethos Score Display Tiers
+```
+[UNTRUSTED] ⚠    0-300    Red
+[VERIFIED] ✓     301-600  Yellow
+[TRUSTED] ✓✓     601-800  Green
+[ELITE] ★        801-900  Cyan
+[LEGENDARY] ♔    901-1000 Purple
+```
+
+### Component Patterns
+
+**Buttons**:
+```
+[ SUBMIT_BLANKSIG ]  // Primary action
+--category=all       // Filter flags
+> EXECUTE_QUERY      // Terminal commands
+```
+
+**Terminal Windows**:
+```
+┌─────────────────────────────────┐
+│ [ELITE] ★ 850 CREDIBILITY       │
+├─────────────────────────────────┤
+│ Testimonial content here...     │
+│                                 │
+│ Category: Whistleblowing        │
+│ Posted: 2h ago                  │
+└─────────────────────────────────┘
+```
+
+**Loading States**:
+```
+PROCESSING_BLANKSIG...
+[████████░░] 80%
+ENCRYPTING_DATA... OK ✓
+ANONYMIZING... OK ✓
+```
 
 ---
 
@@ -98,20 +283,79 @@ blanksig/
 - **Clean Up Unused Code**: Delete, don't comment out or rename with `_`
 
 ### Code Style
-*To be defined based on project language and team preferences*
 
-**When the project initializes, update this section with:**
-- Indentation style (spaces vs tabs, 2 vs 4 spaces)
-- Naming conventions (camelCase, snake_case, PascalCase)
-- Comment style and documentation requirements
-- File organization patterns
-- Import/require ordering
+**TypeScript/React Conventions**:
+- **Indentation**: 2 spaces (no tabs)
+- **Naming**:
+  - Components: PascalCase (`TerminalWindow.tsx`)
+  - Functions/variables: camelCase (`fetchEthosScore`)
+  - Constants: UPPER_SNAKE_CASE (`CREDIBILITY_TIERS`)
+  - Types/Interfaces: PascalCase (`BlankSig`, `EthosScore`)
+- **File Organization**:
+  - One component per file
+  - Co-locate related types in same file
+  - Separate API logic into `/lib` utilities
+- **Import Ordering**:
+  1. React/Next.js imports
+  2. External libraries
+  3. Internal components
+  4. Internal utilities
+  5. Types
+  6. Styles
+
+**Example**:
+```typescript
+'use client'
+
+import { useState } from 'react'
+import { motion } from 'framer-motion'
+
+import { TerminalWindow } from '@/components/terminal-window'
+import { fetchEthosScore } from '@/lib/ethos'
+
+import type { BlankSig } from '@/types'
+```
 
 ### Documentation in Code
 - **Only Add When Necessary**: Don't add comments to code you didn't change
 - **Self-Documenting Code**: Prefer clear naming over comments
 - **Comment the Why, Not the What**: Explain reasoning, not obvious operations
 - **Keep Comments Updated**: Remove outdated comments immediately
+
+### Privacy & Security - CRITICAL
+
+**Anonymity Requirements**:
+- ❌ **NEVER** store wallet addresses with testimonials
+- ❌ **NEVER** log wallet addresses with testimonials
+- ❌ **NEVER** associate any identifying data with testimonials
+- ✅ **ONLY** store: content, category, Ethos score, tier, tags, timestamp
+- ✅ Use temporary session tokens for verification (expire after 5 min)
+- ✅ Clear all identifying data immediately after score verification
+
+**Database Schema Rule**:
+```sql
+-- CORRECT: No identifying fields
+CREATE TABLE blanksigs (
+  id UUID PRIMARY KEY,
+  content TEXT NOT NULL,
+  category VARCHAR(50) NOT NULL,
+  ethos_score INTEGER NOT NULL,
+  ethos_tier VARCHAR(20) NOT NULL,
+  tags TEXT[],
+  created_at TIMESTAMP DEFAULT NOW()
+  -- NO wallet_address
+  -- NO user_id
+  -- NO ip_address
+);
+```
+
+**Security Checklist**:
+- [ ] Rate limiting on submissions (1 per wallet per hour)
+- [ ] Content moderation (filter hate speech, spam)
+- [ ] XSS prevention (sanitize user input)
+- [ ] SQL injection prevention (use parameterized queries)
+- [ ] Add disclaimer on submit page about irreversible anonymity
+- [ ] GDPR-compliant (no personal data stored)
 
 ---
 
@@ -257,28 +501,79 @@ git pull origin <branch-name>
 
 ### Initial Project Setup
 ```bash
-# Example for Node.js project
-npm init -y
-npm install <dependencies>
+# Create Next.js project with TypeScript
+npx create-next-app@latest blanksig --typescript --tailwind --app --no-src-dir
 
-# Example for Python project
-python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-pip install -r requirements.txt
+# Install core dependencies
+npm install @radix-ui/react-slot class-variance-authority clsx tailwind-merge
+npm install framer-motion react-type-animation @react-spring/web
+npm install lucide-react
 
-# Example for Rust project
-cargo init
-cargo build
+# Install Shadcn CLI
+npx shadcn-ui@latest init
+
+# Install development dependencies
+npm install -D @types/node @types/react @types/react-dom
 ```
 
 ### Adding Dependencies
-*To be updated based on project type*
+```bash
+# Add a new package
+npm install <package-name>
+
+# Add a Shadcn component
+npx shadcn-ui@latest add <component-name>
+
+# Examples:
+npx shadcn-ui@latest add button
+npx shadcn-ui@latest add input
+npx shadcn-ui@latest add toast
+```
 
 ### Running the Project
-*To be updated with specific commands*
+```bash
+# Development server (http://localhost:3000)
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+
+# Lint code
+npm run lint
+```
 
 ### Building for Production
-*To be updated with build process*
+```bash
+# Build optimized production bundle
+npm run build
+
+# Test production build locally
+npm start
+
+# Deploy to Vercel
+vercel deploy --prod
+```
+
+### Database Operations
+```bash
+# Initialize Vercel Postgres (if using)
+vercel postgres create
+
+# Run database migrations
+# (Add migration commands when schema is set up)
+```
+
+### Environment Variables
+Required in `.env.local`:
+```bash
+ETHOS_API_KEY=your_key_here
+ETHOS_API_URL=https://api.ethos.network
+DATABASE_URL=your_postgres_url
+NEXT_PUBLIC_SITE_URL=https://blanksig.xyz
+```
 
 ---
 
@@ -306,20 +601,53 @@ cargo build
 
 ### Current Session
 - **Branch**: `claude/claude-md-mkpt5ieob2q0ibpc-1U17O`
-- **Task**: Initial repository analysis and CLAUDE.md creation
-- **Status**: New repository, first commit will initialize the project
+- **Task**: Building BlankSig for Ethos Network Vibeathon
+- **Phase**: Foundation & Setup
 
-### Future Updates Needed
-As the project develops, update the following sections:
-1. [ ] Define project purpose and goals
-2. [ ] Document technology stack and dependencies
-3. [ ] Add installation and setup instructions
-4. [ ] Document API endpoints or CLI commands
-5. [ ] Add testing procedures and examples
-6. [ ] Document deployment process
-7. [ ] Add troubleshooting for project-specific issues
-8. [ ] Include environment variable requirements
-9. [ ] Document any external service dependencies
+### API Routes Reference
+
+**POST /api/blanksigs**
+- Submit anonymous testimonial
+- Request: `{ content, category, tags, walletAddress }`
+- Process: Verify Ethos score → Store only score/tier → Return success
+- CRITICAL: Never store walletAddress in database
+
+**GET /api/blanksigs**
+- Fetch testimonials with filters
+- Query: `?category=whistleblowing&minScore=800&sort=credibility&page=1`
+- Returns: Paginated results with testimonials
+
+**GET /api/verify-score**
+- Verify user's Ethos score
+- Request: `{ walletAddress }`
+- Returns: `{ score, tier, canSubmit }`
+- Used for real-time verification before submission
+
+**GET /api/stats**
+- Platform statistics
+- Returns: `{ total, avgScore, categories }`
+- For landing page display
+
+### Core Features
+
+**1. Submit Anonymous Testimonial**:
+- Connect wallet to verify Ethos score
+- Multi-step terminal-style wizard
+- Category selection: Workplace, Product Review, Whistleblowing, Community Feedback, Other
+- System stores ONLY the Ethos score (no identity)
+- Terminal-style confirmation with fake command execution
+
+**2. Browse Credible Testimonials**:
+- Filter by category, minimum Ethos score threshold
+- Terminal windows with credibility scores
+- Sort by: Most credible, Recent, Most relevant
+- ASCII badges and neon progress bars
+- Command-line style filters: `--category=whistleblowing --min-score=800`
+
+### External Dependencies
+- **Ethos Network API**: https://developers.ethos.network/
+- **Vibe Coding Quickstart**: https://developers.ethos.network/api-documentation/vibe-coding-quickstart
+- **Hackathon Registration**: https://vibeathon.ethos.network/#register
 
 ---
 
@@ -351,7 +679,39 @@ As the project develops, update the following sections:
 - Architecture Decision Records (ADRs)
 
 ### External References
-*Project-specific external resources to be added*
+- Ethos Network API Documentation: https://developers.ethos.network/
+- Next.js 14 Documentation: https://nextjs.org/docs
+- Tailwind CSS Documentation: https://tailwindcss.com/docs
+- Shadcn/ui Components: https://ui.shadcn.com/
+- Framer Motion Documentation: https://www.framer.com/motion/
+
+---
+
+## Critical Reminders for AI Assistants
+
+### Before Making ANY Database Changes
+- ✅ **Triple-check**: Does this store ANY identifying information?
+- ✅ **Verify**: Are wallet addresses completely absent from storage?
+- ✅ **Confirm**: Is anonymity truly guaranteed?
+
+### UI/UX Priorities
+- Every component should scream "Hacker Wii Terminal"
+- Glitch effects, neon glows, terminal aesthetics everywhere
+- No generic UI - every detail is themed
+- Animations should be smooth and memorable
+- Judges should remember "the hacker Wii one"
+
+### Development Priorities
+- **Quality > Quantity**: 1 perfect feature beats 3 mediocre ones
+- **Polish everything**: Custom domain, favicon, OG tags, mobile responsive
+- **Test anonymity**: Verify no data leaks at every step
+- **Demo-ready**: Every feature should wow during presentation
+
+### What Makes This Special
+1. **Unique Aesthetic**: Nintendo Wii + Hacker Terminal = Unforgettable
+2. **Real Problem Solved**: Anonymous yet credible testimonials
+3. **Perfect Ethos Integration**: Reputation layer enables the solution
+4. **Attention to Detail**: Every pixel polished for judges
 
 ---
 
