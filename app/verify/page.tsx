@@ -197,7 +197,7 @@ export default function VerifyPage() {
                 className="mt-6 p-6 border-2 border-secondary bg-secondary/5"
               >
                 <div className="text-center mb-4">
-                  <CredibilityBadge score={result.score} tier={result.tier} size="lg" />
+                  <CredibilityBadge score={result.score} />
                 </div>
 
                 <div className="space-y-2 font-mono text-sm">

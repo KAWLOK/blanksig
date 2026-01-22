@@ -64,7 +64,7 @@ export async function fetchEthosScore(
         // User not found in Ethos - return minimum score
         return {
           score: 0,
-          tier: getCredibilityTier(0),
+          tier: getCredibilityTier(0).label.toLowerCase(),
           canSubmit: false,
         }
       }
@@ -81,12 +81,12 @@ export async function fetchEthosScore(
     // - { reputation: { score: number } }
 
     const score = data.score || data.credibility || 0
-    const tier = getCredibilityTier(score)
+    const tierInfo = getCredibilityTier(score)
     const canSubmit = score >= MIN_SCORE_TO_SUBMIT
 
     return {
       score,
-      tier,
+      tier: tierInfo.label.toLowerCase(),
       canSubmit,
     }
   } catch (error) {
@@ -165,7 +165,7 @@ function getMockEthosScore(walletAddress: string): EthosScore {
 
   return {
     score,
-    tier: getCredibilityTier(score),
+    tier: getCredibilityTier(score).label.toLowerCase(),
     canSubmit: score >= MIN_SCORE_TO_SUBMIT,
   }
 }
