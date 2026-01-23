@@ -439,13 +439,15 @@ function StepConnect({
             {isConnecting ? 'CONNECTING...' : 'CONNECT_METAMASK'}
           </Button>
 
-          {/* Manual address input for development/testing */}
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <div className="font-mono text-xs text-white/40 mb-2">
-              DEV_MODE: Enter wallet address manually
+          {/* Manual address input for development/testing only */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <div className="font-mono text-xs text-white/40 mb-2">
+                DEV_MODE: Enter wallet address manually
+              </div>
+              <TestWalletButtons onSelect={onTestConnect} />
             </div>
-            <TestWalletButtons onSelect={onTestConnect} />
-          </div>
+          )}
         </>
       )}
 
