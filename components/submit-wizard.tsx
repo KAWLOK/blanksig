@@ -228,10 +228,10 @@ export function SubmitWizard({ onComplete }: SubmitWizardProps) {
       await addSubmitLog('> ANONYMIZING_RECORD... OK ✓', 2000)
       await addSubmitLog('> COMMITTING_TO_DATABASE... OK ✓', 2500)
       await addSubmitLog('> CLEARING_SESSION_DATA... OK ✓', 3000)
-      await addSubmitLog(`> BLANKSIG_ID: ${data.id}`, 3500)
+      await addSubmitLog(`> BLANKSIG_ID: ${data.testimonial.id}`, 3500)
       await addSubmitLog('> TRANSMISSION_COMPLETE ✓', 4000)
 
-      setSubmittedId(data.id)
+      setSubmittedId(data.testimonial.id)
       setCompletedSteps((prev) => new Set([...prev, 'submit']))
       setTimeout(() => setCurrentStep('success'), 1000)
     } catch (error) {

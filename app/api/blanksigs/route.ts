@@ -202,8 +202,14 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(limitParam || '20', 10)))
     const offset = (page - 1) * limit
 
-    // Parse minScore
-    const minScore = minScoreParam ? parseInt(minScoreParam, 10) : undefined
+    // Parse minScore with validation
+    let minScore: number | undefined
+    if (minScoreParam) {
+      const parsed = parseInt(minScoreParam, 10)
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 1000) {
+        minScore = parsed
+      }
+    }
 
     // Build filters
     const filters: BlankSigFilters = {
