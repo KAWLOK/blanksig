@@ -209,13 +209,30 @@ export function getTierColor(tier: string): string {
 /**
  * Rate limiting utilities
  * Prevents API abuse and respects Ethos API limits
+ *
+ * SECURITY: Cache uses hashed wallet addresses as keys to prevent
+ * wallet address exposure in memory dumps or debug logs
  */
 const requestCache = new Map<string, { score: EthosScore; timestamp: number }>()
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
 /**
+ * Hash a wallet address for cache key
+ * Uses a simple hash to anonymize the cache key
+ */
+async function hashForCacheKey(walletAddress: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(walletAddress.toLowerCase())
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 16)
+}
+
+/**
  * Cached version of fetchEthosScore
  * Reduces API calls during verification flow
+ *
+ * SECURITY: Cache keys are hashed - wallet addresses are never stored
  *
  * @param walletAddress - Ethereum wallet address
  * @returns Cached or fresh EthosScore
@@ -223,7 +240,8 @@ const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 export async function getCachedEthosScore(
   walletAddress: string
 ): Promise<EthosScore> {
-  const cached = requestCache.get(walletAddress)
+  const cacheKey = await hashForCacheKey(walletAddress)
+  const cached = requestCache.get(cacheKey)
 
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
     return cached.score
@@ -231,7 +249,7 @@ export async function getCachedEthosScore(
 
   const score = await fetchEthosScore(walletAddress)
 
-  requestCache.set(walletAddress, {
+  requestCache.set(cacheKey, {
     score,
     timestamp: Date.now(),
   })
@@ -248,9 +266,9 @@ export async function getCachedEthosScore(
 function cleanCache() {
   const now = Date.now()
 
-  for (const [address, entry] of requestCache.entries()) {
+  for (const [key, entry] of requestCache.entries()) {
     if (now - entry.timestamp > CACHE_TTL) {
-      requestCache.delete(address)
+      requestCache.delete(key)
     }
   }
 }
@@ -259,11 +277,12 @@ function cleanCache() {
  * Clear a specific wallet from cache
  * Useful after score updates
  *
- * @param walletAddress - Wallet to clear from cache
+ * @param walletAddress - Wallet to clear from cache (will be hashed)
  */
-export function clearScoreCache(walletAddress?: string) {
+export async function clearScoreCache(walletAddress?: string) {
   if (walletAddress) {
-    requestCache.delete(walletAddress)
+    const cacheKey = await hashForCacheKey(walletAddress)
+    requestCache.delete(cacheKey)
   } else {
     requestCache.clear()
   }

@@ -71,12 +71,21 @@ export async function createBlankSig(
   ethosTier: string,
   tags: string[] = []
 ): Promise<BlankSig> {
-  // Convert tags array to PostgreSQL array format
-  const tagsArray = `{${tags.map((t) => `"${t.replace(/"/g, '\\"')}"`).join(',')}}`
+  // SECURITY: Sanitize tags to prevent SQL injection
+  // Only allow alphanumeric characters, spaces, hyphens, and underscores
+  const sanitizedTags = tags
+    .map((t) => t.replace(/[^a-zA-Z0-9\s\-_]/g, '').trim())
+    .filter((t) => t.length > 0 && t.length <= 30)
+    .slice(0, 5)
+
+  // Use JSON.stringify for safe array conversion, then cast to text[]
+  // This properly escapes all special characters
+  const tagsJson = JSON.stringify(sanitizedTags)
 
   const result = await sql`
     INSERT INTO blanksigs (content, category, ethos_score, ethos_tier, tags)
-    VALUES (${content}, ${category}, ${ethosScore}, ${ethosTier}, ${tagsArray}::text[])
+    VALUES (${content}, ${category}, ${ethosScore}, ${ethosTier},
+            (SELECT array_agg(value) FROM json_array_elements_text(${tagsJson}::json)))
     RETURNING id, content, category, ethos_score, ethos_tier, tags, created_at
   `
 

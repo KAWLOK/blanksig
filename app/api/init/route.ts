@@ -10,8 +10,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { initializeDatabase } from '@/lib/db'
 
-// Secret key for initialization (set in env vars)
-const INIT_SECRET = process.env.INIT_SECRET || 'dev-secret'
+// Secret key for initialization (MUST be set in env vars)
+// SECURITY: No default value - must be explicitly configured
+const INIT_SECRET = process.env.INIT_SECRET
 
 /**
  * POST /api/init
@@ -21,6 +22,15 @@ const INIT_SECRET = process.env.INIT_SECRET || 'dev-secret'
  */
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Require INIT_SECRET to be explicitly configured
+    if (!INIT_SECRET) {
+      console.error('INIT_SECRET environment variable is not configured')
+      return NextResponse.json(
+        { error: 'Server configuration error: INIT_SECRET not set' },
+        { status: 500 }
+      )
+    }
+
     // Check authorization
     const authHeader = request.headers.get('Authorization')
     const providedSecret = authHeader?.replace('Bearer ', '')
