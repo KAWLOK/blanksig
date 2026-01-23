@@ -20,6 +20,7 @@ import {
   hashWalletAddress,
 } from '@/lib/db'
 import { getCachedEthosScore } from '@/lib/ethos'
+import { moderateContent, getModerationErrorMessage } from '@/lib/moderation'
 import type { SubmitBlankSigRequest, BlankSigCategory, BlankSigFilters } from '@/types'
 
 // Content validation constants
@@ -86,6 +87,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // STEP: Content moderation check
+    const moderationResult = moderateContent(content)
+    if (!moderationResult.isClean) {
+      const errorMessage = getModerationErrorMessage(moderationResult)
+      return NextResponse.json(
+        {
+          error: errorMessage,
+          details: 'Your content violates our community guidelines',
+          flags: moderationResult.flags.map((f) => ({
+            type: f.type,
+            severity: f.severity,
+          })),
+        },
+        { status: 400 }
+      )
+    }
+
+    // Use sanitized content if available
+    const sanitizedContent = moderationResult.sanitizedContent || content
+
     // Validate category
     if (!VALID_CATEGORIES.includes(category)) {
       return NextResponse.json(
@@ -129,7 +150,7 @@ export async function POST(request: NextRequest) {
     // CRITICAL: wallet address is NOT passed to createBlankSig
     // ONLY the verified score and tier are stored
     const testimonial = await createBlankSig(
-      content,
+      sanitizedContent, // Use sanitized content
       category,
       ethosScore.score, // Only the score
       ethosScore.tier,  // Only the tier
@@ -175,6 +196,7 @@ export async function POST(request: NextRequest) {
  * - category: Filter by category
  * - minScore: Minimum Ethos score
  * - sort: 'credibility' | 'recent'
+ * - search: Search in content and tags
  * - page: Page number (1-indexed)
  * - limit: Results per page (default 20, max 100)
  */
@@ -186,6 +208,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') as BlankSigCategory | null
     const minScoreParam = searchParams.get('minScore')
     const sort = searchParams.get('sort') as 'credibility' | 'recent' | null
+    const search = searchParams.get('search')
     const pageParam = searchParams.get('page')
     const limitParam = searchParams.get('limit')
 
@@ -211,11 +234,17 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Sanitize search term (limit length, remove special chars)
+    const sanitizedSearch = search
+      ? search.slice(0, 100).replace(/[<>'";&]/g, '')
+      : undefined
+
     // Build filters
     const filters: BlankSigFilters = {
       category: category || undefined,
       minScore,
       sort: sort || 'recent',
+      search: sanitizedSearch,
     }
 
     // Fetch testimonials

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { TerminalWindow } from '@/components/terminal-window'
 import type { BlankSig, BlankSigCategory } from '@/types'
 
@@ -47,6 +48,8 @@ export default function BrowsePage() {
   const [category, setCategory] = useState<BlankSigCategory | 'all'>('all')
   const [minScore, setMinScore] = useState(0)
   const [sort, setSort] = useState<'credibility' | 'recent'>('credibility')
+  const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [page, setPage] = useState(1)
 
   // Loading animation state
@@ -72,6 +75,7 @@ export default function BrowsePage() {
       const params = new URLSearchParams()
       if (category !== 'all') params.set('category', category)
       if (minScore > 0) params.set('minScore', minScore.toString())
+      if (search) params.set('search', search)
       params.set('sort', sort)
       params.set('page', page.toString())
       params.set('limit', '12')
@@ -92,7 +96,7 @@ export default function BrowsePage() {
       setLoadingStep(loadingSteps.length)
       setTimeout(() => setLoading(false), 200)
     }
-  }, [category, minScore, sort, page, loadingSteps.length])
+  }, [category, minScore, sort, search, page, loadingSteps.length])
 
   useEffect(() => {
     fetchTestimonials()
@@ -101,7 +105,25 @@ export default function BrowsePage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1)
-  }, [category, minScore, sort])
+  }, [category, minScore, sort, search])
+
+  // Handle search submission
+  const handleSearch = () => {
+    setSearch(searchInput.trim())
+  }
+
+  // Handle search on Enter key
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
+  }
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchInput('')
+    setSearch('')
+  }
 
   const handlePageChange = (newPage: number) => {
     if (pagination && newPage >= 1 && newPage <= pagination.totalPages) {
@@ -146,6 +168,35 @@ export default function BrowsePage() {
         >
           <div className="font-terminal text-lg text-secondary mb-4">
             {'>'} QUERY_PARAMETERS:
+          </div>
+
+          {/* Search Bar */}
+          <div className="mb-6">
+            <label className="block font-mono text-xs text-white/60 mb-2">
+              --search
+            </label>
+            <div className="flex gap-2">
+              <Input
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Search content and tags..."
+                className="flex-1"
+              />
+              <Button onClick={handleSearch} variant="secondary">
+                SEARCH
+              </Button>
+              {search && (
+                <Button onClick={clearSearch} variant="ghost">
+                  CLEAR
+                </Button>
+              )}
+            </div>
+            {search && (
+              <div className="mt-2 font-mono text-xs text-accent">
+                {'>'} Active search: &quot;{search}&quot;
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
@@ -208,6 +259,7 @@ export default function BrowsePage() {
           <div className="mt-4 pt-4 border-t border-primary/30">
             <div className="font-mono text-xs text-white/40">
               {'>'} EXECUTING: GET /api/blanksigs
+              {search && ` --search="${search}"`}
               {category !== 'all' && ` --category=${category}`}
               {minScore > 0 && ` --min-score=${minScore}`}
               {` --sort=${sort}`}
@@ -316,11 +368,17 @@ export default function BrowsePage() {
             </div>
             <div className="space-y-2 font-mono text-xs text-white/30">
               <p>TRY:</p>
+              {search && <p>- Clearing search filter</p>}
               <p>- Lowering minimum score threshold</p>
               <p>- Selecting different category</p>
               <p>- Checking back later for new submissions</p>
             </div>
-            <div className="mt-6">
+            <div className="mt-6 flex gap-4 justify-center">
+              {search && (
+                <Button variant="ghost" onClick={clearSearch}>
+                  [ CLEAR_SEARCH ]
+                </Button>
+              )}
               <Link href="/submit">
                 <Button variant="secondary">
                   [ BE_THE_FIRST_TO_SUBMIT ]

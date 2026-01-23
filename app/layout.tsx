@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Inter, VT323, JetBrains_Mono } from "next/font/google"
+import { Providers } from "@/components/providers"
 import "./globals.css"
 
 const inter = Inter({
@@ -41,9 +42,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} ${vt323.variable} ${jetbrainsMono.variable} antialiased`}>
-        <div className="crt-screen min-h-screen">
-          {children}
-        </div>
+        <Providers>
+          <div className="crt-screen min-h-screen">
+            {children}
+          </div>
+        </Providers>
       </body>
     </html>
   )

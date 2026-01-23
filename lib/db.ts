@@ -102,9 +102,9 @@ export async function createBlankSig(
 }
 
 /**
- * Fetch testimonials with filtering and pagination
+ * Fetch testimonials with filtering, search, and pagination
  *
- * @param filters - Query filters
+ * @param filters - Query filters including search
  * @param limit - Number of results per page
  * @param offset - Pagination offset
  * @returns Array of BlankSig records
@@ -114,14 +114,55 @@ export async function getBlankSigs(
   limit: number = 20,
   offset: number = 0
 ): Promise<{ testimonials: BlankSig[]; total: number }> {
-  const { category, minScore, sort = 'recent' } = filters
+  const { category, minScore, sort = 'recent', search } = filters
+
+  // Sanitize search term for ILIKE pattern matching
+  const searchPattern = search
+    ? `%${search.replace(/[%_]/g, '\\$&').toLowerCase()}%`
+    : null
 
   // Build dynamic query based on filters
   let testimonials: BlankSig[]
   let total: number
 
-  // Get total count for pagination
-  if (category && minScore !== undefined) {
+  // Get total count for pagination with all filters
+  if (searchPattern && category && minScore !== undefined) {
+    const countResult = await sql`
+      SELECT COUNT(*) as total FROM blanksigs
+      WHERE category = ${category}
+        AND ethos_score >= ${minScore}
+        AND (LOWER(content) LIKE ${searchPattern} OR EXISTS (
+          SELECT 1 FROM unnest(tags) AS tag WHERE LOWER(tag) LIKE ${searchPattern}
+        ))
+    `
+    total = parseInt(countResult.rows[0].total, 10)
+  } else if (searchPattern && category) {
+    const countResult = await sql`
+      SELECT COUNT(*) as total FROM blanksigs
+      WHERE category = ${category}
+        AND (LOWER(content) LIKE ${searchPattern} OR EXISTS (
+          SELECT 1 FROM unnest(tags) AS tag WHERE LOWER(tag) LIKE ${searchPattern}
+        ))
+    `
+    total = parseInt(countResult.rows[0].total, 10)
+  } else if (searchPattern && minScore !== undefined) {
+    const countResult = await sql`
+      SELECT COUNT(*) as total FROM blanksigs
+      WHERE ethos_score >= ${minScore}
+        AND (LOWER(content) LIKE ${searchPattern} OR EXISTS (
+          SELECT 1 FROM unnest(tags) AS tag WHERE LOWER(tag) LIKE ${searchPattern}
+        ))
+    `
+    total = parseInt(countResult.rows[0].total, 10)
+  } else if (searchPattern) {
+    const countResult = await sql`
+      SELECT COUNT(*) as total FROM blanksigs
+      WHERE LOWER(content) LIKE ${searchPattern} OR EXISTS (
+        SELECT 1 FROM unnest(tags) AS tag WHERE LOWER(tag) LIKE ${searchPattern}
+      )
+    `
+    total = parseInt(countResult.rows[0].total, 10)
+  } else if (category && minScore !== undefined) {
     const countResult = await sql`
       SELECT COUNT(*) as total FROM blanksigs
       WHERE category = ${category} AND ethos_score >= ${minScore}
@@ -142,80 +183,179 @@ export async function getBlankSigs(
     total = parseInt(countResult.rows[0].total, 10)
   }
 
-  // Determine sort order
-  const orderBy = sort === 'credibility' ? 'ethos_score DESC' : 'created_at DESC'
-
-  // Fetch filtered results
+  // Fetch filtered results with search
   let result
-  if (category && minScore !== undefined) {
-    if (sort === 'credibility') {
-      result = await sql`
-        SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
-        FROM blanksigs
-        WHERE category = ${category} AND ethos_score >= ${minScore}
-        ORDER BY ethos_score DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `
+  if (searchPattern) {
+    // Queries with search
+    if (category && minScore !== undefined) {
+      if (sort === 'credibility') {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          WHERE category = ${category}
+            AND ethos_score >= ${minScore}
+            AND (LOWER(content) LIKE ${searchPattern} OR EXISTS (
+              SELECT 1 FROM unnest(tags) AS tag WHERE LOWER(tag) LIKE ${searchPattern}
+            ))
+          ORDER BY ethos_score DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      } else {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          WHERE category = ${category}
+            AND ethos_score >= ${minScore}
+            AND (LOWER(content) LIKE ${searchPattern} OR EXISTS (
+              SELECT 1 FROM unnest(tags) AS tag WHERE LOWER(tag) LIKE ${searchPattern}
+            ))
+          ORDER BY created_at DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      }
+    } else if (category) {
+      if (sort === 'credibility') {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          WHERE category = ${category}
+            AND (LOWER(content) LIKE ${searchPattern} OR EXISTS (
+              SELECT 1 FROM unnest(tags) AS tag WHERE LOWER(tag) LIKE ${searchPattern}
+            ))
+          ORDER BY ethos_score DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      } else {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          WHERE category = ${category}
+            AND (LOWER(content) LIKE ${searchPattern} OR EXISTS (
+              SELECT 1 FROM unnest(tags) AS tag WHERE LOWER(tag) LIKE ${searchPattern}
+            ))
+          ORDER BY created_at DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      }
+    } else if (minScore !== undefined) {
+      if (sort === 'credibility') {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          WHERE ethos_score >= ${minScore}
+            AND (LOWER(content) LIKE ${searchPattern} OR EXISTS (
+              SELECT 1 FROM unnest(tags) AS tag WHERE LOWER(tag) LIKE ${searchPattern}
+            ))
+          ORDER BY ethos_score DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      } else {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          WHERE ethos_score >= ${minScore}
+            AND (LOWER(content) LIKE ${searchPattern} OR EXISTS (
+              SELECT 1 FROM unnest(tags) AS tag WHERE LOWER(tag) LIKE ${searchPattern}
+            ))
+          ORDER BY created_at DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      }
     } else {
-      result = await sql`
-        SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
-        FROM blanksigs
-        WHERE category = ${category} AND ethos_score >= ${minScore}
-        ORDER BY created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `
-    }
-  } else if (category) {
-    if (sort === 'credibility') {
-      result = await sql`
-        SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
-        FROM blanksigs
-        WHERE category = ${category}
-        ORDER BY ethos_score DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `
-    } else {
-      result = await sql`
-        SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
-        FROM blanksigs
-        WHERE category = ${category}
-        ORDER BY created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `
-    }
-  } else if (minScore !== undefined) {
-    if (sort === 'credibility') {
-      result = await sql`
-        SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
-        FROM blanksigs
-        WHERE ethos_score >= ${minScore}
-        ORDER BY ethos_score DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `
-    } else {
-      result = await sql`
-        SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
-        FROM blanksigs
-        WHERE ethos_score >= ${minScore}
-        ORDER BY created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `
+      if (sort === 'credibility') {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          WHERE LOWER(content) LIKE ${searchPattern} OR EXISTS (
+            SELECT 1 FROM unnest(tags) AS tag WHERE LOWER(tag) LIKE ${searchPattern}
+          )
+          ORDER BY ethos_score DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      } else {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          WHERE LOWER(content) LIKE ${searchPattern} OR EXISTS (
+            SELECT 1 FROM unnest(tags) AS tag WHERE LOWER(tag) LIKE ${searchPattern}
+          )
+          ORDER BY created_at DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      }
     }
   } else {
-    if (sort === 'credibility') {
-      result = await sql`
-        SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
-        FROM blanksigs
-        ORDER BY ethos_score DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `
+    // Queries without search (original logic)
+    if (category && minScore !== undefined) {
+      if (sort === 'credibility') {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          WHERE category = ${category} AND ethos_score >= ${minScore}
+          ORDER BY ethos_score DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      } else {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          WHERE category = ${category} AND ethos_score >= ${minScore}
+          ORDER BY created_at DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      }
+    } else if (category) {
+      if (sort === 'credibility') {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          WHERE category = ${category}
+          ORDER BY ethos_score DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      } else {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          WHERE category = ${category}
+          ORDER BY created_at DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      }
+    } else if (minScore !== undefined) {
+      if (sort === 'credibility') {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          WHERE ethos_score >= ${minScore}
+          ORDER BY ethos_score DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      } else {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          WHERE ethos_score >= ${minScore}
+          ORDER BY created_at DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      }
     } else {
-      result = await sql`
-        SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
-        FROM blanksigs
-        ORDER BY created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `
+      if (sort === 'credibility') {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          ORDER BY ethos_score DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      } else {
+        result = await sql`
+          SELECT id, content, category, ethos_score, ethos_tier, tags, created_at
+          FROM blanksigs
+          ORDER BY created_at DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      }
     }
   }
 

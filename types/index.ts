@@ -39,4 +39,5 @@ export interface BlankSigFilters {
   minScore?: number
   sort?: 'credibility' | 'recent' | 'relevant'
   page?: number
+  search?: string
 }

@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { CredibilityBadge } from '@/components/credibility-badge'
+import { useToast } from '@/components/ui/toast'
 import { cn, getCredibilityTier } from '@/lib/utils'
+import { quickContentCheck } from '@/lib/moderation'
 import type { BlankSigCategory, EthosScore } from '@/types'
 
 // Wizard steps
@@ -34,6 +36,8 @@ interface SubmitWizardProps {
 }
 
 export function SubmitWizard({ onComplete }: SubmitWizardProps) {
+  const { addToast } = useToast()
+
   // Step state
   const [currentStep, setCurrentStep] = useState<WizardStep>('connect')
   const [completedSteps, setCompletedSteps] = useState<Set<WizardStep>>(new Set())
@@ -94,18 +98,38 @@ export function SubmitWizard({ onComplete }: SubmitWizardProps) {
         if (accounts.length > 0) {
           setWalletAddress(accounts[0])
           setCompletedSteps((prev) => new Set([...prev, 'connect']))
+          addToast({
+            type: 'success',
+            title: 'WALLET_CONNECTED',
+            message: `${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`,
+          })
           // Auto-advance to verify step after short delay
           setTimeout(() => setCurrentStep('verify'), 500)
         }
       } else {
         setConnectionError('NO_WEB3_PROVIDER_DETECTED')
+        addToast({
+          type: 'error',
+          title: 'NO_PROVIDER',
+          message: 'Install MetaMask or another Web3 wallet',
+        })
       }
     } catch (error) {
       if (error instanceof Error) {
         if (error.message.includes('user rejected')) {
           setConnectionError('CONNECTION_REJECTED_BY_USER')
+          addToast({
+            type: 'warning',
+            title: 'CONNECTION_REJECTED',
+            message: 'User rejected the connection request',
+          })
         } else {
           setConnectionError('CONNECTION_FAILED: ' + error.message)
+          addToast({
+            type: 'error',
+            title: 'CONNECTION_FAILED',
+            message: error.message,
+          })
         }
       }
     } finally {
@@ -233,11 +257,22 @@ export function SubmitWizard({ onComplete }: SubmitWizardProps) {
 
       setSubmittedId(data.testimonial.id)
       setCompletedSteps((prev) => new Set([...prev, 'submit']))
+      addToast({
+        type: 'success',
+        title: 'BLANKSIG_SUBMITTED',
+        message: 'Your anonymous testimonial is now live',
+        duration: 7000,
+      })
       setTimeout(() => setCurrentStep('success'), 1000)
     } catch (error) {
       if (error instanceof Error) {
         await addSubmitLog(`> ERROR: ${error.message.toUpperCase()} ✗`, 2000)
         setSubmitError(error.message)
+        addToast({
+          type: 'error',
+          title: 'SUBMISSION_FAILED',
+          message: error.message,
+        })
       }
     } finally {
       setIsSubmitting(false)
@@ -602,6 +637,9 @@ function StepCompose({
   const minChars = 10
   const maxChars = 2000
 
+  // Real-time content check for warnings
+  const contentCheck = content.length > 10 ? quickContentCheck(content) : { hasIssues: false, warnings: [] }
+
   return (
     <div className="border-2 border-primary p-6">
       <div className="font-terminal text-2xl text-primary mb-4 neon-glow">
@@ -623,6 +661,20 @@ function StepCompose({
         className="min-h-[200px] mb-4"
         maxLength={maxChars}
       />
+
+      {/* Content warnings */}
+      {contentCheck.hasIssues && (
+        <div className="mb-4 p-3 border border-yellow-500/50 bg-yellow-500/10">
+          <div className="font-terminal text-xs text-yellow-500 mb-2">
+            CONTENT_WARNING:
+          </div>
+          {contentCheck.warnings.map((warning, idx) => (
+            <div key={idx} className="font-mono text-xs text-yellow-500/80">
+              {'>'} {warning}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex justify-between items-center mb-6">
         <div className="font-mono text-sm">
