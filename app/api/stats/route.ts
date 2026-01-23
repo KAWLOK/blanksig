@@ -9,6 +9,7 @@
 
 import { NextResponse } from 'next/server'
 import { getStats } from '@/lib/db'
+import { apiLogger } from '@/lib/logger'
 
 /**
  * GET /api/stats
@@ -34,7 +35,7 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('Error fetching stats:', error)
+    apiLogger.error('Error fetching stats', error)
 
     // Return empty stats on error (graceful degradation)
     return NextResponse.json({

@@ -13,6 +13,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getCachedEthosScore } from '@/lib/ethos'
+import { apiLogger } from '@/lib/logger'
+import { MIN_SCORE_TO_SUBMIT } from '@/lib/constants'
 import type { VerifyScoreRequest } from '@/types'
 
 /**
@@ -21,8 +23,11 @@ import type { VerifyScoreRequest } from '@/types'
  * Allows 10 requests per minute per IP
  */
 const verifyRateLimits = new Map<string, { count: number; resetTime: number }>()
-const VERIFY_RATE_LIMIT = 10 // requests per minute
-const VERIFY_RATE_WINDOW = 60 * 1000 // 1 minute
+
+// Rate limit configuration
+const VERIFY_RATE_LIMIT = 10
+const VERIFY_RATE_WINDOW_MS = 60 * 1000
+const MAX_RATE_LIMIT_ENTRIES = 10000
 
 async function hashForRateLimit(input: string): Promise<string> {
   const encoder = new TextEncoder()
@@ -37,7 +42,7 @@ function checkVerifyRateLimit(key: string): boolean {
   const entry = verifyRateLimits.get(key)
 
   // Clean up old entries periodically
-  if (verifyRateLimits.size > 10000) {
+  if (verifyRateLimits.size > MAX_RATE_LIMIT_ENTRIES) {
     for (const [k, v] of verifyRateLimits.entries()) {
       if (v.resetTime < now) {
         verifyRateLimits.delete(k)
@@ -46,7 +51,7 @@ function checkVerifyRateLimit(key: string): boolean {
   }
 
   if (!entry || entry.resetTime < now) {
-    verifyRateLimits.set(key, { count: 1, resetTime: now + VERIFY_RATE_WINDOW })
+    verifyRateLimits.set(key, { count: 1, resetTime: now + VERIFY_RATE_WINDOW_MS })
     return false // Not rate limited
   }
 
@@ -102,10 +107,10 @@ export async function POST(request: NextRequest) {
       canSubmit: ethosScore.canSubmit,
       message: ethosScore.canSubmit
         ? 'Verification successful. You can submit testimonials.'
-        : `Score too low. Minimum score required: 300. Your score: ${ethosScore.score}`,
+        : `Score too low. Minimum score required: ${MIN_SCORE_TO_SUBMIT}. Your score: ${ethosScore.score}`,
     })
   } catch (error) {
-    console.error('Error verifying Ethos score:', error)
+    apiLogger.error('Error verifying Ethos score', error)
 
     // Return user-friendly error
     return NextResponse.json(

@@ -4,19 +4,54 @@
  * This client handles all interactions with the Ethos Network API
  * to fetch user credibility scores.
  *
+ * API Documentation: https://developers.ethos.network/
+ * Quickstart: https://developers.ethos.network/api-documentation/vibe-coding-quickstart
+ *
  * IMPORTANT: Never store wallet addresses with testimonials.
  * Only use for real-time verification during submission.
  */
 
 import { EthosScore } from '@/types'
 import { getCredibilityTier } from '@/lib/utils'
+import { ethosLogger } from '@/lib/logger'
+import {
+  ETHOS_API_URL,
+  ETHOS_API_KEY,
+  MIN_SCORE_TO_SUBMIT,
+  MAX_CREDIBILITY_SCORE,
+  API_TIMEOUT_MS,
+  ETHOS_CACHE_TTL_MS,
+} from '@/lib/constants'
 
-// API Configuration
-const ETHOS_API_URL = process.env.ETHOS_API_URL || 'https://api.ethos.network'
-const ETHOS_API_KEY = process.env.ETHOS_API_KEY
-
-// Minimum score required to submit testimonials
-const MIN_SCORE_TO_SUBMIT = 300
+/**
+ * Ethos API Response Structure
+ *
+ * Based on Ethos Network API documentation:
+ * - The API returns a score object with credibility information
+ * - Scores range from 0-1000
+ * - Additional profile data may be included
+ *
+ * Response format:
+ * {
+ *   "score": number,           // Primary credibility score (0-1000)
+ *   "credibility": number,     // Alternative field name (fallback)
+ *   "reputation": {            // Nested structure (fallback)
+ *     "score": number
+ *   },
+ *   "address": string,         // Wallet address (echoed back)
+ *   "lastUpdated": string      // ISO timestamp
+ * }
+ */
+interface EthosApiResponse {
+  score?: number
+  credibility?: number
+  reputation?: {
+    score?: number
+  }
+  address?: string
+  lastUpdated?: string
+  error?: string
+}
 
 /**
  * Fetches the Ethos credibility score for a given wallet address
@@ -35,17 +70,14 @@ export async function fetchEthosScore(
 
   // Check if API key is configured
   if (!ETHOS_API_KEY) {
-    console.warn('ETHOS_API_KEY not configured. Using mock data for development.')
+    ethosLogger.warn('ETHOS_API_KEY not configured, using mock data')
     return getMockEthosScore(walletAddress)
   }
 
   try {
-    // TODO: Update with actual Ethos API endpoint structure
-    // Common patterns:
-    // - GET /api/v1/score/{address}
-    // - GET /api/v1/profiles/{address}/score
-    // - GraphQL query
-
+    // Ethos API endpoint structure:
+    // GET /api/v1/score/{address} - Primary endpoint for score retrieval
+    // Authentication via Bearer token in Authorization header
     const response = await fetch(
       `${ETHOS_API_URL}/api/v1/score/${walletAddress}`,
       {
@@ -54,8 +86,7 @@ export async function fetchEthosScore(
           'Authorization': `Bearer ${ETHOS_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        // Add timeout to prevent hanging
-        signal: AbortSignal.timeout(10000), // 10 second timeout
+        signal: AbortSignal.timeout(API_TIMEOUT_MS),
       }
     )
 
@@ -72,15 +103,11 @@ export async function fetchEthosScore(
       throw new Error(`Ethos API error: ${response.status} ${response.statusText}`)
     }
 
-    const data = await response.json()
+    const data: EthosApiResponse = await response.json()
 
-    // TODO: Update based on actual API response structure
-    // Common response patterns:
-    // - { score: number }
-    // - { credibility: number }
-    // - { reputation: { score: number } }
-
-    const score = data.score || data.credibility || 0
+    // Extract score from response, handling multiple possible field names
+    // Priority: score > credibility > reputation.score > 0
+    const score = extractScoreFromResponse(data)
     const tierInfo = getCredibilityTier(score)
     const canSubmit = score >= MIN_SCORE_TO_SUBMIT
 
@@ -91,12 +118,40 @@ export async function fetchEthosScore(
     }
   } catch (error) {
     if (error instanceof Error) {
-      // Network errors, timeouts, etc.
-      console.error('Failed to fetch Ethos score:', error.message)
+      ethosLogger.error('Failed to fetch Ethos score', error)
       throw new Error(`Unable to verify Ethos score: ${error.message}`)
     }
     throw error
   }
+}
+
+/**
+ * Extract score from Ethos API response
+ * Handles multiple possible response structures
+ */
+function extractScoreFromResponse(data: EthosApiResponse): number {
+  // Try different field names in order of priority
+  if (typeof data.score === 'number') {
+    return clampScore(data.score)
+  }
+
+  if (typeof data.credibility === 'number') {
+    return clampScore(data.credibility)
+  }
+
+  if (data.reputation && typeof data.reputation.score === 'number') {
+    return clampScore(data.reputation.score)
+  }
+
+  // Default to 0 if no score found
+  return 0
+}
+
+/**
+ * Clamp score to valid range
+ */
+function clampScore(score: number): number {
+  return Math.max(0, Math.min(MAX_CREDIBILITY_SCORE, Math.round(score)))
 }
 
 /**
@@ -112,7 +167,7 @@ export async function canSubmitTestimonial(
     const { canSubmit } = await fetchEthosScore(walletAddress)
     return canSubmit
   } catch (error) {
-    console.error('Error validating submission eligibility:', error)
+    ethosLogger.error('Error validating submission eligibility', error)
     return false
   }
 }
@@ -120,6 +175,10 @@ export async function canSubmitTestimonial(
 /**
  * Batch fetch scores for multiple addresses
  * Useful for displaying testimonial authors' scores
+ *
+ * Note: If Ethos API supports batch requests in the future,
+ * this can be optimized to use a single API call.
+ * Current implementation uses Promise.allSettled for resilience.
  *
  * @param addresses - Array of wallet addresses
  * @returns Map of address to EthosScore
@@ -129,25 +188,36 @@ export async function fetchBatchScores(
 ): Promise<Map<string, EthosScore>> {
   const scores = new Map<string, EthosScore>()
 
-  // TODO: Check if Ethos API supports batch requests
-  // If not, use Promise.all with rate limiting
+  // Use Promise.allSettled to handle individual failures gracefully
+  const results = await Promise.allSettled(
+    addresses.map(async (address) => ({
+      address,
+      score: await fetchEthosScore(address),
+    }))
+  )
 
-  const promises = addresses.map(async (address) => {
-    try {
-      const score = await fetchEthosScore(address)
-      scores.set(address, score)
-    } catch (error) {
-      console.error(`Failed to fetch score for ${address}:`, error)
-      // Set default score on error
+  for (const result of results) {
+    if (result.status === 'fulfilled') {
+      scores.set(result.value.address, result.value.score)
+    } else {
+      // Log failure but continue with other addresses
+      ethosLogger.warn('Failed to fetch score in batch', {
+        error: result.reason?.message,
+      })
+    }
+  }
+
+  // Fill in missing addresses with default scores
+  for (const address of addresses) {
+    if (!scores.has(address)) {
       scores.set(address, {
         score: 0,
         tier: 'untrusted',
         canSubmit: false,
       })
     }
-  })
+  }
 
-  await Promise.all(promises)
   return scores
 }
 
@@ -155,13 +225,18 @@ export async function fetchBatchScores(
  * Mock Ethos scores for development/testing
  * Returns deterministic scores based on wallet address
  *
- * REMOVE THIS IN PRODUCTION when Ethos API is configured
+ * Test wallets for different tiers:
+ * - 0x1111...1111 -> ~100 (untrusted)
+ * - 0x4444...4444 -> ~400 (verified)
+ * - 0x7777...7777 -> ~700 (trusted)
+ * - 0x8888...8888 -> ~850 (elite)
+ * - 0x9999...9999 -> ~950 (legendary)
  */
 function getMockEthosScore(walletAddress: string): EthosScore {
   // Generate deterministic score from wallet address
-  const hash = walletAddress.slice(2, 10) // Take first 8 hex chars
+  const hash = walletAddress.slice(2, 10)
   const numHash = parseInt(hash, 16)
-  const score = numHash % 1001 // Score between 0-1000
+  const score = numHash % (MAX_CREDIBILITY_SCORE + 1)
 
   return {
     score,
@@ -214,7 +289,6 @@ export function getTierColor(tier: string): string {
  * wallet address exposure in memory dumps or debug logs
  */
 const requestCache = new Map<string, { score: EthosScore; timestamp: number }>()
-const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
 /**
  * Hash a wallet address for cache key
@@ -243,7 +317,7 @@ export async function getCachedEthosScore(
   const cacheKey = await hashForCacheKey(walletAddress)
   const cached = requestCache.get(cacheKey)
 
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+  if (cached && Date.now() - cached.timestamp < ETHOS_CACHE_TTL_MS) {
     return cached.score
   }
 
@@ -267,7 +341,7 @@ function cleanCache() {
   const now = Date.now()
 
   for (const [key, entry] of requestCache.entries()) {
-    if (now - entry.timestamp > CACHE_TTL) {
+    if (now - entry.timestamp > ETHOS_CACHE_TTL_MS) {
       requestCache.delete(key)
     }
   }

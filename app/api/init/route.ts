@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { initializeDatabase } from '@/lib/db'
+import { apiLogger } from '@/lib/logger'
 
 // Secret key for initialization (MUST be set in env vars)
 // SECURITY: No default value - must be explicitly configured
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
   try {
     // SECURITY: Require INIT_SECRET to be explicitly configured
     if (!INIT_SECRET) {
-      console.error('INIT_SECRET environment variable is not configured')
+      apiLogger.error('INIT_SECRET environment variable is not configured')
       return NextResponse.json(
         { error: 'Server configuration error: INIT_SECRET not set' },
         { status: 500 }
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
       ],
     })
   } catch (error) {
-    console.error('Error initializing database:', error)
+    apiLogger.error('Error initializing database', error)
 
     return NextResponse.json(
       {

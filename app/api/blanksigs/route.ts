@@ -21,22 +21,20 @@ import {
 } from '@/lib/db'
 import { getCachedEthosScore } from '@/lib/ethos'
 import { moderateContent, getModerationErrorMessage } from '@/lib/moderation'
+import { apiLogger } from '@/lib/logger'
+import {
+  MIN_CONTENT_LENGTH,
+  MAX_CONTENT_LENGTH,
+  MAX_TAGS,
+  MAX_TAG_LENGTH,
+  MAX_SEARCH_LENGTH,
+  MAX_PAGE_SIZE,
+  DEFAULT_PAGE_SIZE,
+  MAX_CREDIBILITY_SCORE,
+  MIN_SCORE_TO_SUBMIT,
+  VALID_CATEGORIES,
+} from '@/lib/constants'
 import type { SubmitBlankSigRequest, BlankSigCategory, BlankSigFilters } from '@/types'
-
-// Content validation constants
-const MIN_CONTENT_LENGTH = 10
-const MAX_CONTENT_LENGTH = 2000
-const MAX_TAGS = 5
-const MAX_TAG_LENGTH = 30
-
-// Valid categories
-const VALID_CATEGORIES: BlankSigCategory[] = [
-  'workplace',
-  'product_review',
-  'whistleblowing',
-  'community_feedback',
-  'other',
-]
 
 /**
  * POST /api/blanksigs
@@ -108,7 +106,7 @@ export async function POST(request: NextRequest) {
     const sanitizedContent = moderationResult.sanitizedContent || content
 
     // Validate category
-    if (!VALID_CATEGORIES.includes(category)) {
+    if (!VALID_CATEGORIES.includes(category as typeof VALID_CATEGORIES[number])) {
       return NextResponse.json(
         { error: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}` },
         { status: 400 }
@@ -140,7 +138,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Insufficient Ethos score',
-          details: `Minimum score required: 300. Your score: ${ethosScore.score}`,
+          details: `Minimum score required: ${MIN_SCORE_TO_SUBMIT}. Your score: ${ethosScore.score}`,
         },
         { status: 403 }
       )
@@ -176,7 +174,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error) {
-    console.error('Error creating testimonial:', error)
+    apiLogger.error('Error creating testimonial', error)
 
     return NextResponse.json(
       {
@@ -213,7 +211,7 @@ export async function GET(request: NextRequest) {
     const limitParam = searchParams.get('limit')
 
     // Validate category if provided
-    if (category && !VALID_CATEGORIES.includes(category)) {
+    if (category && !VALID_CATEGORIES.includes(category as typeof VALID_CATEGORIES[number])) {
       return NextResponse.json(
         { error: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}` },
         { status: 400 }
@@ -222,21 +220,21 @@ export async function GET(request: NextRequest) {
 
     // Parse pagination
     const page = Math.max(1, parseInt(pageParam || '1', 10))
-    const limit = Math.min(100, Math.max(1, parseInt(limitParam || '20', 10)))
+    const limit = Math.min(MAX_PAGE_SIZE, Math.max(1, parseInt(limitParam || String(DEFAULT_PAGE_SIZE), 10)))
     const offset = (page - 1) * limit
 
     // Parse minScore with validation
     let minScore: number | undefined
     if (minScoreParam) {
       const parsed = parseInt(minScoreParam, 10)
-      if (!isNaN(parsed) && parsed >= 0 && parsed <= 1000) {
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= MAX_CREDIBILITY_SCORE) {
         minScore = parsed
       }
     }
 
     // Sanitize search term (limit length, remove special chars)
     const sanitizedSearch = search
-      ? search.slice(0, 100).replace(/[<>'";&]/g, '')
+      ? search.slice(0, MAX_SEARCH_LENGTH).replace(/[<>'";&]/g, '')
       : undefined
 
     // Build filters
@@ -264,7 +262,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Error fetching testimonials:', error)
+    apiLogger.error('Error fetching testimonials', error)
 
     return NextResponse.json(
       {
